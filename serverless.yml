@@ -1,0 +1,121 @@
+service: ${file(./package.json):name}
+
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+
+  stage: ${opt:stage, file(./config.json):stage}
+  region: ${opt:region, file(./config.json):region}
+  deploymentBucket: ${file(./config.json):deploymentBucket}
+
+  logRetentionInDays: 1
+  stackTags:
+    SERVICE: ${self:service}
+
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-add-api-key
+
+
+custom:
+
+  appName: ${file(./config.json):name}
+  paramPath: /${self:custom.appName}/${self:provider.stage}
+  apiUrlParameterName: ${self:custom.paramPath}/FinancePlatformUrl
+
+  tableName: ${self:service}-${self:provider.stage}
+  tableArn:
+    Fn::GetAtt:
+    - Table
+    - Arn
+
+  apiKeys:
+    - name: MVPKey
+      value: ${env:MVP_KEY}
+
+
+package:
+  individually: true
+
+
+resources:
+
+  Resources:
+    Table:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        AttributeDefinitions:
+        - AttributeName: location
+          AttributeType: S
+        - AttributeName: itemType
+          AttributeType: S
+        KeySchema:
+        - AttributeName: location
+          KeyType: HASH
+        - AttributeName: itemType
+          KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+
+
+functions:
+
+  getCount:
+    handler: api/getCount.getCount
+    memorySize: 768
+    timeout: 10
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:GetItem
+      Resource:
+      - ${self:custom.tableArn}
+    environment:
+      TABLE_NAME: ${self:custom.tableName}
+    events:
+      - http:
+          path: count
+          method: get
+          private: true
+          integration: lambda
+
+  addCount:
+    handler: api/addCount.addCount
+    memorySize: 768
+    timeout: 10
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      Resource:
+      - ${self:custom.tableArn}
+    environment:
+      TABLE_NAME: ${self:custom.tableName}
+    events:
+      - http:
+          path: count
+          method: post
+          private: true
+          integration: lambda
+
+  newLocation:
+    handler: api/newLocation.newLocation
+    memorySize: 768
+    timeout: 10
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:PutItem
+      Resource:
+      - ${self:custom.tableArn}
+    environment:
+      TABLE_NAME: ${self:custom.tableName}
+    events:
+      - http:
+          path: /
+          method: post
+          private: true
+          integration: lambda

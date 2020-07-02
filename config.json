@@ -1,0 +1,6 @@
+{
+  "name": "ctrack",
+  "stage": "sb",
+  "region": "ap-southeast-1",
+  "deploymentBucket": "ctrack-serverless-deployments"
+}
