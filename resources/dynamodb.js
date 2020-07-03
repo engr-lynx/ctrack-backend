@@ -56,7 +56,23 @@ const read = async (location) => {
   }
 }
 
+const scan = async () => {
+  try {
+    const params = {
+      TableName,
+    }
+    const data = await DB.scan(params).promise()
+    const items = data.Items.map((item) => {
+      return parse(item)
+    })
+    return items
+  } catch (error) {
+    throw error
+  }
+}
+
 module.exports = {
   upsert,
   read,
+  scan,
 }

@@ -78,7 +78,26 @@ functions:
       - http:
           path: count
           method: get
-          private: true
+          cors: true
+          integration: lambda
+
+  getAll:
+    handler: api/getAll.getAll
+    memorySize: 768
+    timeout: 10
+    iamRoleStatements:
+    - Effect: Allow
+      Action:
+      - dynamodb:Scan
+      Resource:
+      - ${self:custom.tableArn}
+    environment:
+      TABLE_NAME: ${self:custom.tableName}
+    events:
+      - http:
+          path: /
+          method: get
+          cors: true
           integration: lambda
 
   addCount:

@@ -3,12 +3,22 @@
 const {
   upsert,
   read,
+  scan,
 } = require('../resources/dynamodb')
 
 const getCount = async (location) => {
   try {
     const item = await read(location)
     return item
+  } catch (error) {
+    throw error
+  }
+}
+
+const getAll = async () => {
+  try {
+    const items = await scan()
+    return items
   } catch (error) {
     throw error
   }
@@ -36,6 +46,7 @@ const newLocation = async (location, count) => {
 
 module.exports = {
   getCount,
+  getAll,
   addCount,
   newLocation,
 }
